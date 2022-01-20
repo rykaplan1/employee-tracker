@@ -1,7 +1,15 @@
 const mysql = require('mysql2');
 
-const getAll = (database, tableName) => {
-  return database.promise().query(`SELECT * FROM ${tableName}`);
+const getDepartments = (database) => {
+  return database.promise().query('SELECT * FROM department');
+}
+
+const getRoles = (database) => {
+  return database.promise().query('SELECT role.id, role.title, department.name AS department, role.salary FROM role INNER JOIN department ON role.department_id = department.id');
+}
+
+const getEmployees = (database) => {
+  return database.promise().query('SELECT e.id AS id, e.first_name AS first_name, e.last_name AS last_name, role.title, role.salary, department.name AS department, m.first_name AS manager_first_name, m.last_name AS manager_last_name FROM employee e LEFT JOIN employee m ON m.id = e.manager_id LEFT JOIN role ON role.id = e.role_id LEFT JOIN department ON department.id = role.department_id');
 }
 
 const addEntry = (database, tableName, columnNames, entryData) => {
@@ -17,7 +25,7 @@ const addEntry = (database, tableName, columnNames, entryData) => {
   return database.promise().query(`INSERT INTO ${tableName} ${columnString} VALUES (${entryString})`, entryData);
 }
 
-const getEmployeeID = (database, employeeName) => {
+const getEmployeeId = (database, employeeName) => {
   return database.promise().query('SELECT id FROM employee WHERE first_name = ? AND last_name = ?', employeeName);
 }
 
@@ -37,38 +45,44 @@ const updateManager = (database, employeeId, newManager) => {
   return database.promise().query('UPDATE employee SET manager_id = ? WHERE id = ?', [newManager, employeeId])
 }
 
+const getManagers = (database) => {
+  return database.promise().query('SELECT * FROM employee WHERE id IN (SELECT manager_id FROM employee)');
+}
+
 const getEmployeesByManager = (database, managerId) => {
-  return database.promise().query('SELECT * FROM employee WHERE manager_id = ?', managerId)
+  return database.promise().query('SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name AS department FROM employee LEFT JOIN role ON role.id = employee.role_id LEFT JOIN department ON department.id = role.department_id WHERE manager_id = ?', managerId);
 }
 
-const getRoleIDsByDepartment = (database, departmentId) => {
-  return database.promise().query('SELECT id FROM role WHERE department_id = ?', departmentId);
+const getRoleIdsByDepartment = (database, departmentId) => {
+  return database.promise().query();
 }
 
-const getEmployeesByDepartment = (database, roleIds) => {
-  let roleIdString = '';
-  for (let i = 0; i < roleIds.length; i++) {
-    roleIdString += 'role_id = ?';
-    if (i < roleIdsData.length - 1) {
-      roleIdString += ' OR '
-    }
-  }
-  
-  return database.promise().query(`SELECT * FROM employee WHERE ${roleIdString}`, roleIds);
+const getEmployeesByDepartment = (database, departmentId) => {
+  return database.promise().query('SELECT e.id AS id, e.first_name AS first_name, e.last_name AS last_name, role.title, role.salary, m.first_name AS manager_first_name, m.last_name AS manager_last_name FROM employee e LEFT JOIN employee m ON m.id = e.manager_id LEFT JOIN role ON role.id = e.role_id WHERE department_id = ?', departmentId);
 }
 
 const deleteEntry = (database, tableName, id) => {
   return database.promise().query(`DELETE FROM ${tableName} WHERE id = ?`, id);
 }
 
-const getDepartmentBudget = (database, roleIds) => {
-  let roleIdString = '';
-  for (let i = 0; i < roleIds.length; i++) {
-    roleIdString += 'role.id = ?';
-    if (i < roleIdsData.length - 1) {
-      roleIdString += ' OR '
-    }
-  }
+const getDepartmentBudget = (database, department) => {
+  return database.promise().query('SELECT SUM(salary) FROM employee LEFT JOIN role ON role.id = employee.role_id LEFT JOIN department ON department.id = role.department_id WHERE department_id = ?', department);
+}
 
-  return database.promise().query(`SELECT SUM(salary) FROM employee INNER JOIN role ON employee.role_id = role.id WHERE ${roleIdString}`, roleIds);
+module.exports = {
+  getDepartments,
+  getRoles,
+  getEmployees,
+  addEntry,
+  getEmployeeId,
+  getDepartmentId,
+  getRoleId,
+  updateRole,
+  updateManager,
+  getManagers,
+  getEmployeesByManager,
+  getRoleIdsByDepartment,
+  getEmployeesByDepartment,
+  deleteEntry,
+  getDepartmentBudget
 }
