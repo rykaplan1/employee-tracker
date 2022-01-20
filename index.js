@@ -175,10 +175,10 @@ async function init() {
         ]);
 
         const updateRoleEmployeeId = await queryfn.getEmployeeId(db, updateRoleInfo.name.split(" "));
-        const roleId = await queryfn.getRoleId(db, updateInfo.role);
+        const roleId = await queryfn.getRoleId(db, updateRoleInfo.role);
 
         await queryfn.updateRole(db, updateRoleEmployeeId[0][0].id, roleId[0][0].id).then(() => {
-          console.log(`New role for ${updateInfo.name}: ${updateInfo.role}`);
+          console.log(`New role for ${updateRoleInfo.name}: ${updateRoleInfo.role}`);
         });
 
         break;
